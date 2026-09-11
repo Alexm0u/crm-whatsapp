@@ -21,23 +21,32 @@ model Post {
 }
 
 model Client {
-  id        Int     @id @default(autoincrement())
-  fullName  String
-  phone     String
-  email     String?
-  notes     String?
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+  id              Int     @id @default(autoincrement())
+  fullName        String
+  phone           String
+  email           String?
+  notes           String?
+  appointments    Appointment[]
+  createdAt       TimestamptzString @default(now())
+  updatedAt       temporal.updatedAtString()
 }
 
 model Appointment {
   id                  Int     @id @default(autoincrement())
   clientId            Int
+  client              Client  @relation(fields: [clientId], references: [id])
   physiotherapistId   Int
+  physiotherapist     Physiotherapist @relation(fields: [physiotherapistId], references: [id])
   serviceId           Int
-  startAt             DateTime
+  startAt             TimestamptzString
   status              String
   notes               String?
   createdAt           TimestamptzString @default(now())
   updatedAt           temporal.updatedAtString()
+}
+
+model Physiotherapist {
+  id                  Int     @id @default(autoincrement())
+  fullName            String
+  appointments    Appointment[]
 }
