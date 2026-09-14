@@ -1,52 +1,133 @@
 // use prisma-next
 
-model User {
+model Contact {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
+  fullName  String?
+  phone     String   @unique
+  email     String?
+  notes     String?
+
+  patients  ContactPatient[]
+
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
 }
 
-model Post {
+model Patient {
   id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
+  fullName  String
+  phone     String?
+  email     String?
+  notes     String?
+
+  contacts      ContactPatient[]
+  appointments  Appointment[]
+
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
 }
 
-model Client {
-  id              Int     @id @default(autoincrement())
-  fullName        String
-  phone           String
-  email           String?
-  notes           String?
-  appointments    Appointment[]
-  createdAt       TimestamptzString @default(now())
-  updatedAt       temporal.updatedAtString()
+model ContactPatient {
+  contactId Int
+  patientId Int
+
+  contact Contact @relation(fields: [contactId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@id([contactId, patientId])
 }
 
 model Appointment {
-  id                  Int     @id @default(autoincrement())
-  clientId            Int
-  client              Client  @relation(fields: [clientId], references: [id])
+  id                  Int               @id @default(autoincrement())
+  patientId           Int
+  patient             Patient           @relation(fields: [patientId], references: [id])
+
   physiotherapistId   Int
-  physiotherapist     Physiotherapist @relation(fields: [physiotherapistId], references: [id])
-  serviceId           Int
+  physiotherapist     Physiotherapist   @relation(fields: [physiotherapistId], references: [id])
+
   startAt             TimestamptzString
-  status              String
+
+  status              AppointmentStatus @default(PENDING)
+  source              AppointmentSource @default(WHATSAPP)
+
   notes               String?
+
   createdAt           TimestamptzString @default(now())
   updatedAt           temporal.updatedAtString()
+
+  @@index([physiotherapistId, startAt])
+  @@index([patientId, startAt])
 }
 
 model Physiotherapist {
-  id                  Int     @id @default(autoincrement())
-  fullName            String
-  appointments    Appointment[]
+  id            Int              @id @default(autoincrement())
+  fullName      String
+
+  appointments  Appointment[]
+  schedules     WeeklySchedule[]
+  exceptions    ScheduleException[]
+
+  createdAt     TimestamptzString @default(now())
+  updatedAt     temporal.updatedAtString()
+}
+
+model WeeklySchedule {
+  id                  Int            @id @default(autoincrement())
+  physiotherapistId   Int
+  physiotherapist     Physiotherapist @relation(fields: [physiotherapistId], references: [id])
+
+  dayOfWeek            DayOfWeek
+  startTime            String
+  endTime              String
+
+  createdAt            TimestamptzString @default(now())
+  updatedAt            temporal.updatedAtString()
+
+  @@index([physiotherapistId, dayOfWeek])
+}
+
+model ScheduleException {
+  id                  Int                  @id @default(autoincrement())
+  physiotherapistId   Int
+  physiotherapist     Physiotherapist      @relation(fields: [physiotherapistId], references: [id])
+
+  date                 String
+  type                 ScheduleExceptionType
+
+  startTime            String?
+  endTime              String?
+
+  notes                String?
+
+  createdAt            TimestamptzString @default(now())
+  updatedAt            temporal.updatedAtString()
+
+  @@index([physiotherapistId, date])
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum AppointmentSource {
+  WHATSAPP
+  ADMIN
+}
+
+enum ScheduleExceptionType {
+  CLOSED
+  MODIFIED_HOURS
 }
