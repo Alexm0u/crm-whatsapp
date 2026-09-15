@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
+
 import {
   availabilitySearchRequestSchema,
+  availabilitySearchResponseSchema,
 } from "@/lib/api/availability";
 
-export async function POST(request: Request) {
-  const body: unknown = await request.json();
+import { calculateSlots } from "@/lib/availability/calculate-slots";
+import { getAvailabilityData } from "@/lib/availability/get-availability-data";
 
-  const result = availabilitySearchRequestSchema.safeParse(body);
+export async function POST(request: Request) {
+  const result =
+    availabilitySearchRequestSchema.safeParse(
+      await request.json(),
+    );
 
   if (!result.success) {
     return NextResponse.json(
@@ -18,9 +24,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const availabilityRequest = result.data;
+  const requestData = result.data;
 
-  return NextResponse.json({
-    received: availabilityRequest,
+  const data = await getAvailabilityData(
+    requestData.physiotherapistId,
+  );
+
+  const response = calculateSlots({
+    ...data,
+    from: requestData.from,
+    limit: requestData.limit,
+    cursor: requestData.cursor,
   });
+
+  return NextResponse.json(
+    availabilitySearchResponseSchema.parse(response),
+  );
 }
